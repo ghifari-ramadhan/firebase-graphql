@@ -7,7 +7,9 @@ firebase.initializeApp(config)
 module.exports = {
     Mutation: {
         async register(_, { registerInput: {username, email, password, confirmPassword}}, context, info) {
-            // TODO
+            // TODO: Validate user input
+            // TODO: Make sure user is unique
+            // TODO: Add user details to database
             try {
                 let userCredentials = {
                     username,
