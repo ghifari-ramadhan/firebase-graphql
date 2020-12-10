@@ -1,4 +1,4 @@
-const { db } = require('./utility/admin');
+const { db } = require('../../utility/admin');
 
 module.exports = {
     Query: {
@@ -19,7 +19,7 @@ module.exports = {
                 return posts
             }
             catch(err) {
-                console.log(err);
+                console.log(err)
                 throw new Error(err)
             }
             
