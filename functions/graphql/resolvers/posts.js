@@ -1,4 +1,4 @@
-const { db } = require('./utility/admin');
+const { db } = require('../../utility/admin');
 
 module.exports = {
     Query: {
