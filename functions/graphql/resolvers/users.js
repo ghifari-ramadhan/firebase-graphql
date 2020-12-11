@@ -6,13 +6,55 @@ const firebase = require('firebase')
 const { db } = require('../../utility/admin')
 firebase.initializeApp(config)
 
+const { validateRegisterInput, validateLoginInput } = require('../../utility/validators')
 
 module.exports = {
     Mutation: {
+        async login(_, { username, password }, context, info) {
+
+            const { valid, errors } = validateLoginInput(username, password)
+
+            if(!valid) throw new UserInputError('Errors', { errors })
+
+            try{
+                const { id, email, createdAt } = await db.doc(`/users/${username}`).get()
+                                                    .then(doc => {
+                                                        if(!doc.exists) {
+                                                            throw new UserInputError('Username tidak ditemukan', {
+                                                                errors: { username: 'Username tidak ditemukan' }
+                                                            })
+                                                        } else {
+                                                            return doc.data()
+                                                        }
+                                                    })
+
+                const token = await firebase.auth().signInWithEmailAndPassword(email, password)
+                                .then( data => data.user.getIdToken() )
+                                .then( idToken => idToken )
+
+                return {
+                    username,
+                    id,
+                    email,
+                    createdAt,
+                    token
+                }
+
+            }
+            catch(err){
+                console.log(err)
+                if(err.code === 'auth/wrong-password') throw new UserInputError('Password salah!')
+                throw new Error(err)
+            }
+        },
+
         async register(_, { registerInput: {username, email, password, confirmPassword}}, context, info) {
             // TODO: Validate user input
             // TODO: Make sure user is unique
             // TODO: Add user details to database
+            const { valid, errors } = validateRegisterInput(username, email, password, confirmPassword)
+
+            if(!valid) throw new UserInputError('Errors', { errors })
 
             try {
                 let userCredentials = {
@@ -20,8 +62,8 @@ module.exports = {
                     email,
                     createdAt: new Date().toISOString()
                 };
-
-                password = await encrypt.hash(password, 12)
+                
+                const hash = await encrypt.hash(password, 12)
 
                 await db.doc(`/users/${username}`)
                         .get()
@@ -50,7 +92,7 @@ module.exports = {
                                 _private: []
                             }
                             userData._private.push({
-                                hash: password, 
+                                hash, 
                                 lastUpdate: new Date().toISOString()
                             })
 
