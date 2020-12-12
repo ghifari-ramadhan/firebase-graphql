@@ -49,9 +49,9 @@ module.exports = {
         },
 
         async register(_, { registerInput: {username, email, password, confirmPassword}}, context, info) {
-            // TODO: Validate user input
-            // TODO: Make sure user is unique
-            // TODO: Add user details to database
+            // DONE: Validate user input
+            // DONE: Make sure user is unique
+            // DONE: Add user details to database
             const { valid, errors } = validateRegisterInput(username, email, password, confirmPassword)
 
             if(!valid) throw new UserInputError('Errors', { errors })
