@@ -1,5 +1,6 @@
-const { db } = require('../../utility/admin');
+const { AuthenticationError } = require('apollo-server-express');
 
+const { db } = require('../../utility/admin');
 const FBAuth = require('../../utility/FBAuth')
 
 module.exports = {
@@ -83,6 +84,31 @@ module.exports = {
                     console.log(err)
                     throw new Error(err)
                 })
+        },
+
+        async deletePost(_, { postId }, context){
+            const user = await FBAuth(context)
+            const document = db.doc(`/posts/${postId}`)
+
+            try{
+                await document.get()
+                .then(doc => {
+                    if(!doc.exists){
+                        throw new Error('Postingan tidak ditemukan')
+                    }
+                    if(doc.data().owner !== user.username){
+                        throw new AuthenticationError('Unauthorized!')
+                    } else {
+                        document.delete()
+                    }
+                })
+
+                return 'Postingan sudah dihapus'
+            }
+            catch(err){
+                console.log(err);
+                throw new Error(err)
+            }
         }
     }
 }
