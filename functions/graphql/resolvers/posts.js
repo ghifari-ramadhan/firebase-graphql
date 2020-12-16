@@ -7,7 +7,8 @@ module.exports = {
     Query: {
         async getPosts() {
             try {
-                posts = []
+                let posts = [];
+
                 await db.collection('posts').orderBy('createdAt', 'desc').get()
                     .then(data => {
                         data.forEach(doc => {
@@ -17,17 +18,17 @@ module.exports = {
                                 owner: doc.data().owner,
                                 createdAt: doc.data().createdAt,
                                 likeCount: doc.data().likeCount,
-                                commentCount: doc.data().commentCount,
+                                commentCount: doc.data().commentCount
                             })
                         })
                     })
+
                 return posts
             }
             catch(err) {
                 console.log(err)
                 throw new Error(err)
             }
-            
         },
 
         async getPost(_, { postId }) {
@@ -36,14 +37,24 @@ module.exports = {
                 
                 await db.doc(`/posts/${postId}`).get()
                                 .then(doc => {
-                                    console.log(doc.data())
                                     if(!doc.exists){
                                         throw new Error('Postingan tidak ditemukan')
                                     }
                                     else {
                                         post = doc.data()
                                         post.id = doc.id
+
+                                        return db.collection(`posts/${postId}/comments`).orderBy('createdAt', 'desc').get();
                                     }
+                                })
+                                .then(data => {
+                                    post.comments = []
+                                    data.forEach(doc => post.comments.push( doc.data() ))
+                                    return db.collection(`posts/${postId}/likes`).orderBy('createdAt', 'desc').get();
+                                })
+                                .then(data => {
+                                    post.likes = []
+                                    data.forEach(doc => post.likes.push( doc.data() ))
                                 })
                                 .catch(err => {
                                     console.log(err)
@@ -63,12 +74,11 @@ module.exports = {
     Mutation: {
         async createPost(_, { text }, context){
 
-            const user = await FBAuth(context) // If this has no error it means that there is a user
-            console.log(user);
+            const { username } = await FBAuth(context) // If this has no error it means that there is a user
 
             const newPost = {
                 text,
-                owner: user.username,
+                owner: username,
                 createdAt: new Date().toISOString(),
                 likeCount: 0,
                 commentCount: 0
@@ -76,9 +86,9 @@ module.exports = {
 
             return await db.collection('posts').add(newPost)
                 .then(doc => {
-                    const post = newPost;
-                    post.id = doc.id
-                    return post
+                    newPost.id = doc.id
+                    doc.update({id: doc.id})
+                    return newPost
                 })
                 .catch(err => {
                     console.log(err)
@@ -87,7 +97,7 @@ module.exports = {
         },
 
         async deletePost(_, { postId }, context){
-            const user = await FBAuth(context)
+            const { username } = await FBAuth(context)
             const document = db.doc(`/posts/${postId}`)
 
             try{
@@ -96,7 +106,7 @@ module.exports = {
                     if(!doc.exists){
                         throw new Error('Postingan tidak ditemukan')
                     }
-                    if(doc.data().owner !== user.username){
+                    if(doc.data().owner !== username){
                         throw new AuthenticationError('Unauthorized!')
                     } else {
                         document.delete()

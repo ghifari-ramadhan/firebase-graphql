@@ -8,6 +8,21 @@ module.exports = gql`
         createdAt: String!
         likeCount: Int!
         commentCount: Int!
+        likes: [Like]
+        comments: [Comment]
+    }
+
+    type Comment {
+        id: ID!
+        createdAt: String!
+        owner: String!
+        text: String!
+    }
+
+    type Like {
+        id: ID!
+        createdAt: String!
+        owner: String!
     }
 
     type User {
@@ -36,5 +51,9 @@ module.exports = gql`
 
         createPost(text: String!): Post!
         deletePost(postId: ID!): String!
+
+        createComment(postId: String!, text: String!): Comment!
+        deleteComment(postId: ID!, commentId: ID!): Post!
+        likePost(postId: ID!): Post!
     }
 `

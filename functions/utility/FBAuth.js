@@ -19,7 +19,6 @@ module.exports = async (context) => {
                         return db.collection('users').where('id', '==', user.uid).limit(1).get();
                     })
                     .then(data => {
-                        console.log(data);
                         user.username = data.docs[0].data().username
                     })
                     .catch(err => {
@@ -27,7 +26,6 @@ module.exports = async (context) => {
                         throw new AuthenticationError(err)
                     })
 
-                console.log(user);
                 return user
             }
             catch(err){
